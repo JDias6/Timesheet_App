@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Manager Dashboard</h1>
+    <div class="flex space-x-2">
+      <a href="{% url 'timesheet:my_requests' %}" class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200">
+        My Requests
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center">
+        <div class="p-2 bg-yellow-100 rounded-lg">
+          <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600">Pending Requests</p>
+          <p class="text-2xl font-bold text-gray-900" id="pending-count">{{ pending_requests.count }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center">
+        <div class="p-2 bg-green-100 rounded-lg">
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600">Team Members</p>
+          <p class="text-2xl font-bold text-gray-900">{{ user.direct_reports.count }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center">
+        <div class="p-2 bg-blue-100 rounded-lg">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600">Recent Decisions</p>
+          <p class="text-2xl font-bold text-gray-900">{{ recent_decisions.count }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <!-- Pending Requests -->
+    <div class="bg-white shadow rounded-lg" id="pending-requests-container">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold">Pending Leave Requests</h2>
+      </div>
+      
+      <div id="pending-requests-list">
+        {% if pending_requests %}
+          <div class="divide-y divide-gray-200">
+            {% for request in pending_requests %}
+              <div class="p-6 request-row" id="request-{{ request.id }}">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                      <h3 class="text-sm font-medium text-gray-900">
+                        {{ request.user.get_full_name }}
+                      </h3>
+                      <span class="text-xs text-gray-500">({{ request.user.employee_id }})</span>
+                    </div>
+                    
+                    <div class="mt-1 text-sm text-gray-600">
+                      <span class="font-medium">{{ request.leave_type.name }}</span>
+                      • {{ request.start_date|date:"M j" }} - {{ request.end_date|date:"M j, Y" }}
+                      • {{ request.total_days }} days
+                    </div>
+                    
+                    {% if request.comments %}
+                      <p class="mt-2 text-sm text-gray-600">
+                        <strong>Comments:</strong> {{ request.comments }}
+                      </p>
+                    {% endif %}
+                    
+                    <p class="mt-1 text-xs text-gray-500">
+                      Submitted {{ request.created|timesince }} ago
+                    </p>
+                  </div>
+
+                  <div class="ml-4 flex-shrink-0">
+                    <!-- Approve/Reject Buttons -->
+                    <div class="flex space-x-2" id="buttons-{{ request.id }}">
+                      <form 
+                        hx-post="{% url 'timesheet:approve_reject' request.id %}"
+                        hx-target="#request-{{ request.id }}"
+                        hx-swap="delete"
+                        hx-confirm="Approve this leave request?"
+                        class="inline"
+                      >
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <button 
+                          type="submit"
+                          class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                        >
+                          Approve
+                        </button>
+                      </form>
+                      
+                      <button 
+                        class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                        onclick="showRejectForm({{ request.id }})"
+                      >
+                        Reject
+                      </button>
+                    </div>
+
+                    <!-- Reject Form (hidden by default) -->
+                    <div id="reject-form-{{ request.id }}" class="hidden mt-2">
+                      <form 
+                        hx-post="{% url 'timesheet:approve_reject' request.id %}"
+                        hx-target="#request-{{ request.id }}"
+                        hx-swap="delete"
+                        class="space-y-2"
+                      >
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reject">
+                        <textarea 
+                          name="rejection_reason" 
+                          placeholder="Reason for rejection..."
+                          class="w-full text-xs border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          rows="2"
+                          required
+                        ></textarea>
+                        <div class="flex space-x-1">
+                          <button 
+                            type="submit"
+                            class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                          >
+                            Confirm Reject
+                          </button>
+                          <button 
+                            type="button"
+                            onclick="hideRejectForm({{ request.id }})"
+                            class="px-2 py-1 border text-xs rounded hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="p-6 text-center text-gray-500">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="mt-2">No pending requests</p>
+            <p class="text-sm">All caught up! 🎉</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recent Decisions -->
+    <div class="bg-white shadow rounded-lg">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold">Recent Decisions</h2>
+      </div>
+      
+      {% if recent_decisions %}
+        <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+          {% for request in recent_decisions %}
+            <div class="p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-sm font-medium">{{ request.user.get_full_name }}</span>
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                 {% if request.status == 'APPROVED' %}bg-green-100 text-green-800
+                                 {% else %}bg-red-100 text-red-800{% endif %}">
+                      {{ request.get_status_display }}
+                    </span>
+                  </div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    {{ request.leave_type.name }} • {{ request.start_date|date:"M j" }} - {{ request.end_date|date:"M j" }}
+                  </div>
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ request.approved_at|timesince }} ago
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="p-6 text-center text-gray-500">
+          <p>No recent decisions</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function showRejectForm(requestId) {
+  // Hide the buttons
+  document.getElementById(`buttons-${requestId}`).classList.add('hidden');
+  // Show the reject form
+  document.getElementById(`reject-form-${requestId}`).classList.remove('hidden');
+}
+
+function hideRejectForm(requestId) {
+  // Show the buttons
+  document.getElementById(`buttons-${requestId}`).classList.remove('hidden');
+  // Hide the reject form
+  document.getElementById(`reject-form-${requestId}`).classList.add('hidden');
+}
+
+// Handle successful HTMX requests
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+  if (evt.detail.successful && evt.detail.xhr.status === 200) {
+    console.log('Request processed successfully, updating UI...');
+    // Update the pending count after successful approval/rejection
+    updatePendingCount();
+    
+    // Show success message
+    showSuccessMessage('Request processed successfully!');
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  }
+});
+
+// Handle HTMX errors
+document.body.addEventListener('htmx:responseError', function(evt) {
+  console.error('HTMX Error:', evt.detail);
+  showErrorMessage('An error occurred while processing the request.');
+});
+
+function updatePendingCount() {
+  // Count remaining request rows
+  const remainingRequests = document.querySelectorAll('.request-row').length;
+  const countElement = document.getElementById('pending-count');
+  if (countElement) {
+    countElement.textContent = remainingRequests;
+  }
+  
+  // If no requests left, show the "no requests" message
+  if (remainingRequests === 0) {
+    const container = document.getElementById('pending-requests-list');
+    container.innerHTML = `
+      <div class="p-6 text-center text-gray-500">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <p class="mt-2">No pending requests</p>
+        <p class="text-sm">All caught up! 🎉</p>
+      </div>
+    `;
+  }
+}
+
+function showSuccessMessage(message) {
+  // Create and show a temporary success message
+  const alertDiv = document.createElement('div');
+  alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-50';
+  alertDiv.textContent = message;
+  document.body.appendChild(alertDiv);
+  
+  setTimeout(() => {
+    if (alertDiv.parentNode) {
+      alertDiv.remove();
+    }
+  }, 1500);
+}
+
+function showErrorMessage(message) {
+  // Create and show a temporary error message
+  const alertDiv = document.createElement('div');
+  alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg z-50';
+  alertDiv.textContent = message;
+  document.body.appendChild(alertDiv);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    alertDiv.remove();
+  }, 5000);
+}
+
+// Debug HTMX requests
+document.body.addEventListener('htmx:beforeRequest', function(evt) {
+  console.log('HTMX Request:', evt.detail);
+});
+
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+  console.log('HTMX Response:', evt.detail);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load timesheet_extras %}
+{% load leave_extras %}
+{% load tz %}
+
+{% block title %}Weekly Timesheet{% endblock %}
+
+{% block content %}
+<div id="timesheet-container">
+  <div class="p-6 bg-white shadow rounded-lg">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Weekly Timesheet</h1>
+      <div class="flex items-center space-x-2">
+        <!-- Prev week -->
+        <button
+          hx-get="{% url 'timesheet:weekly_with_date' prev_year prev_week %}"
+          hx-target="#timesheet-container"
+          hx-swap="innerHTML"
+          class="px-3 py-1 border rounded hover:bg-gray-100"
+        >←</button>
+
+        <!-- Date range -->
+        <div class="px-4 py-1 bg-gray-100 rounded">
+          {{ week_start|date:"M d" }} – {{ week_end|date:"M d, Y" }}
+        </div>
+
+        <!-- Next week -->
+        <button
+          hx-get="{% url 'timesheet:weekly_with_date' next_year next_week %}"
+          hx-target="#timesheet-container"
+          hx-swap="innerHTML"
+          class="px-3 py-1 border rounded hover:bg-gray-100"
+        >→</button>
+      </div>
+    </div>
+
+    {# ── FLASH MESSAGES ── #}
+    {% if messages %}
+      <div class="mb-4 space-y-2">
+        {% for message in messages %}
+          <div
+            class="px-4 py-2 rounded 
+                   {% if message.tags == 'success' %}
+                     bg-green-100 border-l-4 border-green-600 text-green-800
+                   {% elif message.tags == 'error' %}
+                     bg-red-100 border-l-4 border-red-600 text-red-800
+                   {% endif %}"
+          >
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="POST" class="space-y-4">
+      {% csrf_token %}
+
+      <input type="hidden" name="viewing_year" value="{{ week_start.year }}">
+      <input type="hidden" name="viewing_week" value="{{ week_start|date:'W' }}">
+
+      <!-- Timesheet grid -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full table-auto">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left">Project</th>
+
+              {# Dynamic day headers #}
+              {% for day in days %}
+                <th class="px-3 py-2 text-center text-sm text-gray-700">
+                  {{ day|date:"D j M" }}
+                </th>
+              {% endfor %}
+
+              <th class="px-4 py-2 text-center">Week&nbsp;Hours</th>
+              <th class="px-2"></th>
+            </tr>
+          </thead>
+
+          <tbody id="timesheet-body" class="divide-y divide-gray-100">
+            {# One row per project #}
+            {% for project in projects %}
+              {% include "timesheet/row.html" with project=project %}
+            {% endfor %}
+
+            {# Add-row button placeholder #}
+            <tr id="add-row-placeholder" class="bg-gray-50">
+              {# Add Row button #}
+              <td colspan="{{ days|length|add:'3' }}" class="px-4 py-2 text-right">
+                <button
+                  type="button"
+                  id="add-row-btn"
+                  hx-post="{% url 'timesheet:add_row' %}?year={{ week_start.year }}&week={{ week_start|date:'W' }}"
+                  hx-target="#add-row-placeholder"
+                  hx-swap="beforebegin"
+                  class="text-blue-600 hover:text-blue-800"
+                >
+                ＋ ADD ROW
+                </button>
+              </td>
+            </tr>
+          </tbody>
+
+          <tfoot class="bg-gray-100">
+            <tr class="font-medium">
+              <td class="px-4 py-2 text-right">Totals</td>
+
+              {# Daily totals #}
+              {% for day in days %}
+              <td class="px-3 py-1 text-center">
+                {% if day|is_leave_day:approved_leave_days %}
+                  <span class="text-green-600 text-xs font-medium"> 
+                    7.5
+                  </span>
+                {% else %}
+                  {{ day_totals|get_item:day|default:"0" }}
+                {% endif %}
+              </td>
+              {% endfor %}
+              {# Grand total #}
+              <td class="px-4 py-2 text-center">{{ week_total|default:"0" }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Actions -->
+      <div class="mt-4 flex flex-col space-y-2">
+        {% if last_submitted %}
+          <div class="text-sm text-gray-600 flex items-center">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Last submitted: {{ last_submitted|date:"D j M Y" }}
+          </div>
+        {% endif %}
+        <div class="mt-4 flex space-x-2">
+          <button
+            type="submit"
+            name="action" 
+            value="save"
+            class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:ring-2 focus:ring-blue-200"
+          >Save</button>
+          <button
+            type="submit"
+            name="action" 
+            value="submit"
+            {% if last_submitted %}
+              onclick="return confirm('You previously submitted this timesheet on {{ last_submitted|date:"D j M Y" }}. Are you sure you want to submit changes?')"
+            {% endif %}
+            class="px-6 py-2 border rounded hover:bg-gray-50 text-gray-700 focus:ring-2 focus:ring-gray-200"
+          >Submit</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

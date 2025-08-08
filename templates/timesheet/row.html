@@ -1,0 +1,50 @@
+{% load timesheet_extras %}
+{% load leave_extras %}
+<tr class="hover:bg-gray-50" 
+  x-data="{ projectId: {{project.id}}, projectSelected: true, }"
+>
+  <td class="px-4 py-2">
+    <div class="font-medium">{{ project.code }}</div>
+    <div class="text-sm text-gray-500">{{ project.name }}</div>
+  </td>
+
+  {% for day in days %}
+    {% get_entry entries project.id day as cell_value %}
+    <td class="px-2 py-1 text-center">
+      {% if day|is_leave_day:approved_leave_days %}
+        <!-- Show leave badge instead of input -->
+        <div style="background-color: #fef3c7; color: #92400e; padding: 8px; text-align: center; border-radius: 8px; font-weight: bold;">
+          {{ day|get_leave_detail:leave_details|default:"AL" }}
+        </div>
+      {% else %}
+        <!-- Show normal hour input -->
+        <input
+          name="hours_{{ project.id }}_{{ day|date:'Y-m-d' }}"
+          type="number"
+          step="0.1"
+          min="0"
+          max="7.5"
+          placeholder="e.g. 5.5"
+          value="{% if cell_value %}{{ cell_value }}{% endif %}"
+          class="w-20 text-center border rounded py-1 text-sm focus:ring-2 focus:ring-blue-200 mx-auto block"
+        />
+      {% endif %}
+    </td>
+  {% endfor %}
+
+  <!-- Week total for this project -->
+  <td class="px-4 py-2 text-center font-semibold">
+    {{ project_totals|get_item:project.id|default:"0" }}
+  </td>
+
+  <!-- Remove row button -->
+  <td class="px-2 py-2 text-center">
+    <button
+      type="button"
+      hx-delete="{% url 'timesheet:remove_project' project.id %}"
+      hx-target="closest tr"
+      hx-swap="remove"
+      class="text-red-500 hover:text-red-700"
+    >&times;</button>
+  </td>
+</tr>

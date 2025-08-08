@@ -1,0 +1,36 @@
+{# templates/timesheet/add_row.html #}
+<tr id="add-row" class="bg-white">
+  <td class="px-4 py-2">
+    <select
+      name="project_id"
+      class="w-full border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200"
+      hx-trigger="change"
+      hx-post="{% url 'timesheet:confirm_add_row' %}?year={{ request.GET.year }}&week={{ request.GET.week }}"
+      hx-include="[name=project_id]"
+      hx-target="#add-row"
+      hx-swap="outerHTML"
+    >
+      <option value="">Select a project…</option>
+      {% for p in available_projects %}
+        <option value="{{ p.id }}">{{ p.code }} – {{ p.name }}</option>
+      {% endfor %}
+    </select>
+  </td>
+  
+  {# Create individual empty cells for each day instead of using colspan #}
+  {% for day in days %}
+    <td class="px-2 py-1"></td>
+  {% endfor %}
+  
+  {# Week total column #}
+  <td class="px-4 py-2 text-center">0</td>
+  
+  {# Remove button column #}
+  <td class="px-2 py-2 text-center">
+    <button 
+      type="button" 
+      onclick="this.closest('tr').remove()"
+      class="text-red-500 hover:text-red-700"
+    >&times;</button>
+  </td>
+</tr>

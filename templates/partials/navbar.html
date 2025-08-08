@@ -1,0 +1,127 @@
+<!-- Navigation Sidebar  -->
+<div class="flex flex-col justify-between h-full">
+  <div>
+    <div class="flex items-center h-16 px-4 border-b">
+      <span class="font-bold text-xl text-blue-600">Timesheet App</span>
+    </div>
+    <!-- Navigation links -->
+    <ul class="mt-6 space-y-2 px-4">
+      <li>
+        <a href="{% url 'timesheet:weekly' %}" class="flex items-center px-3 py-2 rounded hover:bg-gray-200 font-medium {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-100{% endif %}">
+          <!-- Dashboard Icon -->
+          <svg class="h-5 w-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+          </svg>
+          Analytics Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'timesheet:weekly' %}" class="flex items-center px-3 py-2 rounded hover:bg-gray-200 font-medium {% if 'weekly' in request.resolver_match.url_name %}bg-gray-100{% endif %}">
+          <svg class="h-5 w-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Timesheet
+        </a>
+      </li>
+      
+      <!-- Leave Dropdown -->
+      <li x-data="{ open: false }" class="relative">
+        <button 
+          @click="open = !open"
+          class="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-200 font-medium {% if 'leave_request' in request.get_full_path %}bg-gray-100{% endif %}"
+        >
+          <div class="flex items-center">
+            <svg class="h-5 w-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            My Leave
+          </div>
+          <svg 
+            class="h-4 w-4 transition-transform" 
+            :class="{ 'rotate-180': open }"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        
+        <!-- Dropdown Menu -->
+        <div 
+          x-show="open" 
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="opacity-0 scale-95"
+          x-transition:enter-end="opacity-100 scale-100"
+          x-transition:leave="transition ease-in duration-75"
+          x-transition:leave-start="opacity-100 scale-100"
+          x-transition:leave-end="opacity-0 scale-95"
+          class="ml-4 mt-1 space-y-1"
+        >
+          <a 
+            href="{% url 'timesheet:leave_request' %}" 
+            class="block px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-gray-100 rounded {% if 'request' in request.resolver_match.url_name %}bg-blue-50 text-blue-700{% endif %}"
+          >
+            <svg class="h-4 w-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Request Leave
+          </a>
+          
+          <a 
+            href="{% url 'timesheet:my_requests' %}" 
+            class="block px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-gray-100 rounded {% if 'my_requests' in request.resolver_match.url_name %}bg-blue-50 text-blue-700{% endif %}"
+          >
+            <svg class="h-4 w-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            My Requests
+          </a>
+          
+          <!-- Manager Dashboard - Only show if user is a manager -->
+          {% if user.direct_reports.exists %}
+            {% load timesheet_extras %}
+            {% get_pending_requests_count user as pending_count %}
+            <a 
+              href="{% url 'timesheet:manager_dashboard' %}" 
+              class="flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-gray-100 rounded {% if 'manager' in request.resolver_match.url_name %}bg-blue-50 text-blue-700{% endif %}"
+            >
+              <div class="flex items-center">
+                <svg class="h-4 w-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                Manager Dashboard
+              </div>
+              <!-- Badge for pending requests -->
+              {% if pending_count > 0 %}
+                <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                  {{ pending_count }}
+                </span>
+              {% endif %}
+            </a>
+          {% endif %}
+        </div>
+      </li>
+    </ul>
+    
+    <!-- Account section -->
+    <div class="mt-8 px-4 text-xs text-gray-400">Account</div>
+    <ul class="space-y-2 px-4">
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="flex items-center px-3 py-2 text-red-500 hover:text-red-700 rounded hover:bg-gray-200 w-full">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            Logout
+          </button>
+        </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="flex items-center px-3">Log in</a>
+        {% endif %}
+      </li>
+    </ul>
+  </div>
+  <div class="p-4 text-xs text-gray-300">&copy; 2024 Your Company</div>
+</div>

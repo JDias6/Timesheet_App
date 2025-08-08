@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>{% block title %}Timesheet App{% endblock %}</title>
+
+  {# Tailwind CSS #}
+  {# <script src="https://cdn.tailwindcss.com"></script> #} 
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+
+  {# HTMX #}
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+
+  {# Alpine.js #}
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-100 min-h-screen">
+   <div class="flex h-screen">
+  <!-- Sidebar -->
+  {% block sidebar %}
+    {% if user.is_authenticated %}
+      <aside class="w-64 bg-white border-r">
+        {% include "partials/navbar.html" %}
+      </aside>
+    {% endif %}
+  {% endblock %}
+  <!-- Main content -->
+    <main class="flex-1 overflow-y-auto p-6">
+      {% block content %}
+      {% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

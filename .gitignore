@@ -1,0 +1,6 @@
+node_modules
+__psycache__/
+*.pyc
+.env
+.env.docker
+staticfiles

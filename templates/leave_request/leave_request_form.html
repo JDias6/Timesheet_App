@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Request Leave{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Request Leave</h1>
+    <div class="flex space-x-2">
+      <a href="{% url 'timesheet:my_requests' %}" class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200">
+        My Requests
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Leave Request Form -->
+    <div class="lg:col-span-2">
+      <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold mb-4">New Leave Request</h2>
+        
+        {# Flash Messages #}
+        {% if messages %}
+          <div class="mb-4 space-y-2">
+            {% for message in messages %}
+              <div class="px-4 py-2 rounded 
+                         {% if message.tags == 'success' %}bg-green-100 border-l-4 border-green-600 text-green-800
+                         {% elif message.tags == 'error' %}bg-red-100 border-l-4 border-red-600 text-red-800
+                         {% elif message.tags == 'warning' %}bg-yellow-100 border-l-4 border-yellow-600 text-yellow-800
+                         {% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-600 rounded">
+            {% for error in form.non_field_errors %}
+              <p class="text-red-800">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="POST" class="space-y-6" id="leave-form">
+          {% csrf_token %}
+          
+          <!-- Leave Type Field with HTMX -->
+          <div>
+            <label for="{{ form.leave_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+              {{ form.leave_type.label }}
+              {% if form.leave_type.field.required %}<span class="text-red-500">*</span>{% endif %}
+            </label>
+            <select 
+              name="leave_type"
+              id="{{ form.leave_type.id_for_label }}"
+              class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              hx-get="{% url 'timesheet:check_balance_htmx' %}"
+              hx-trigger="change"
+              hx-target="#balance-info"
+              hx-include="[name='start_date'], [name='end_date']"
+            >
+              <option value="">Select leave type...</option>
+              {% for choice in form.leave_type.field.queryset %}
+                <option value="{{ choice.id }}" {% if form.leave_type.value == choice.id|stringformat:"s" %}selected{% endif %}>
+                  {{ choice.name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if form.leave_type.help_text %}
+              <p class="mt-1 text-sm text-gray-500">{{ form.leave_type.help_text }}</p>
+            {% endif %}
+            {% if form.leave_type.errors %}
+              <div class="mt-1 text-sm text-red-600">
+                {% for error in form.leave_type.errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Date Range Fields with HTMX -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Start Date -->
+            <div>
+              <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ form.start_date.label }}
+                {% if form.start_date.field.required %}<span class="text-red-500">*</span>{% endif %}
+              </label>
+              <input 
+                name="start_date"
+                id="{{ form.start_date.id_for_label }}"
+                type="date"
+                value="{{ form.start_date.value|default:'' }}"
+                min="{{ form.start_date.field.widget.attrs.min }}"
+                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                hx-get="{% url 'timesheet:calculate_days_htmx' %}"
+                hx-trigger="change"
+                hx-target="#days-calculation"
+                hx-include="[name='end_date'], [name='leave_type']"
+                hx-swap="innerHTML"
+              >
+              {% if form.start_date.help_text %}
+                <p class="mt-1 text-sm text-gray-500">{{ form.start_date.help_text }}</p>
+              {% endif %}
+              {% if form.start_date.errors %}
+                <div class="mt-1 text-sm text-red-600">
+                  {% for error in form.start_date.errors %}
+                    <p>{{ error }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- End Date -->
+            <div>
+              <label for="{{ form.end_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ form.end_date.label }}
+                {% if form.end_date.field.required %}<span class="text-red-500">*</span>{% endif %}
+              </label>
+              <input 
+                name="end_date"
+                id="{{ form.end_date.id_for_label }}"
+                type="date"
+                value="{{ form.end_date.value|default:'' }}"
+                min="{{ form.end_date.field.widget.attrs.min }}"
+                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                hx-get="{% url 'timesheet:calculate_days_htmx' %}"
+                hx-trigger="change"
+                hx-target="#days-calculation"
+                hx-include="[name='start_date'], [name='leave_type']"
+                hx-swap="innerHTML"
+              >
+              {% if form.end_date.help_text %}
+                <p class="mt-1 text-sm text-gray-500">{{ form.end_date.help_text }}</p>
+              {% endif %}
+              {% if form.end_date.errors %}
+                <div class="mt-1 text-sm text-red-600">
+                  {% for error in form.end_date.errors %}
+                    <p>{{ error }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- HTMX Target Areas -->
+          <div id="days-calculation">
+            <!-- Days calculation will be loaded here via HTMX -->
+          </div>
+
+          <div id="balance-info">
+            <!-- Balance information will be loaded here via HTMX -->
+          </div>
+
+          <!-- Comments Field -->
+          <div>
+            <label for="{{ form.comments.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+              {{ form.comments.label }}
+            </label>
+            {{ form.comments|add_class:"w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" }}
+            {% if form.comments.help_text %}
+              <p class="mt-1 text-sm text-gray-500">{{ form.comments.help_text }}</p>
+            {% endif %}
+            {% if form.comments.errors %}
+              <div class="mt-1 text-sm text-red-600">
+                {% for error in form.comments.errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex space-x-3">
+            <button
+              type="submit"
+              class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Submit Request
+            </button>
+            <a 
+              href="{% url 'timesheet:my_requests' %}"
+              class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Leave Balance Sidebar -->
+    <div class="space-y-4">
+      <div class="bg-white shadow rounded-lg p-4">
+        <h3 class="font-semibold text-gray-900 mb-3">{{ current_year }} Leave Balance</h3>
+        
+        {% if entitlements %}
+          <div class="space-y-3">
+            {% for entitlement in entitlements %}
+              <div class="border-l-4 border-blue-500 pl-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm font-medium">{{ entitlement.leave_type.name }}</span>
+                  <span class="text-lg font-bold text-blue-600">
+                    {{ entitlement.remaining_days }}
+                  </span>
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ entitlement.used_days }} used of {{ entitlement.allocated_days }}
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                  <div 
+                    class="bg-blue-600 h-2 rounded-full" 
+                    style="width: {% if entitlement.allocated_days > 0 %}{% widthratio entitlement.used_days entitlement.allocated_days 100 %}{% else %}0{% endif %}%"
+                  ></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-sm text-gray-500">No leave entitlements found for {{ current_year }}.</p>
+        {% endif %}
+      </div>
+
+      <!-- Quick Tips -->
+      <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+        <h4 class="text-sm font-semibold text-yellow-800 mb-2">Quick Tips</h4>
+        <ul class="text-xs text-yellow-700 space-y-1">
+          <li>• Weekend days are automatically excluded</li>
+          <li>• Requests require manager approval</li>
+          <li>• You'll receive email confirmations</li>
+          <li>• Submit requests at least 2 weeks in advance</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
