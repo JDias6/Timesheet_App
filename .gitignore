@@ -3,4 +3,4 @@ __psycache__/
 *.pyc
 .env
 .env.docker
-staticfiles
+staticfiles/
