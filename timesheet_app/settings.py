@@ -87,13 +87,7 @@ if ENV_STATE == "production":
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 
 # Customise User model
 AUTH_USER_MODEL = "timesheet.User"
@@ -128,12 +122,12 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Email Configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = "apikey"  # This is literally the string "apikey"
+EMAIL_HOST_PASSWORD = config("SENDGRID_API_KEY", default="")
 DEFAULT_FROM_EMAIL = config("EMAIL_HOST_USER", default="noreply@example.com")
 
 # Logging configuration
