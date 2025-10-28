@@ -314,22 +314,27 @@ class LeaveRequest(models.Model):
 
             Thank You!
             """
-        try:
-            logger.info(f"Attempting to send confirmatio email to {self.user.email}")
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=getattr(settings, "EMAIL_HOST_USER", "noreply@company.com"),
-                recipient_list=[self.user.email],
-                fail_silently=False,
-            )
-            logger.info(f"Confirmation email sent successfully to {self.user.email}")
-            return True
-        except Exception as e:
-            logger.error(
-                f"Failed to send confirmation email to {self.user.email}: {str(e)}"
-            )
-            return False
+        logger.info(f"CONFIRMATION EMAIL (Demo Mode)")
+        logger.info(f"To: {self.user.email}")
+        logger.info(f"Subject: {subject}")
+        return True
+
+        # try:
+        #    logger.info(f"Attempting to send confirmatio email to {self.user.email}")
+        #    send_mail(
+        #        subject=subject,
+        #       message=message,
+        #       from_email=getattr(settings, "EMAIL_HOST_USER", "noreply@company.com"),
+        #       recipient_list=[self.user.email],
+        #       fail_silently=False,
+        #   )
+        #   logger.info(f"Confirmation email sent successfully to {self.user.email}")
+        #   return True
+        # except Exception as e:
+        #   logger.error(
+        #        f"Failed to send confirmation email to {self.user.email}: {str(e)}"
+        #    )
+        #    return False
 
     def send_status_notification(self):
         # Send a notification when the status of the leave request changes
@@ -372,24 +377,30 @@ class LeaveRequest(models.Model):
             logger.info(f"No notification needed for status: {self.status}")
             return True
 
-        try:
-            logger.info(f"Attempting to send status notification to {self.user.email}")
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[
-                    self.user.email
-                ],  # make sure settings.py is configured to use email settings
-                fail_silently=False,
-            )
-            logger.info(f"Notification sent successfully to {self.user.email}")
-            return True
-        except Exception as e:
-            logger.error(
-                f"Error sending status notification to {self.user.email: {str(e)}}"
-            )
-            return False
+        logger.info(f" STATUS NOTIFICATION EMAIL (Demo Mode)")
+        logger.info(f"To: {self.user.email}")
+        logger.info(f"Subject: {subject}")
+        logger.info(f"Status: {self.status}")
+        return True
+
+        # try:
+        #    logger.info(f"Attempting to send status notification to {self.user.email}")
+        #    send_mail(
+        #        subject=subject,
+        #        message=message,
+        #        from_email=settings.DEFAULT_FROM_EMAIL,
+        #        recipient_list=[
+        #            self.user.email
+        #       ],  # make sure settings.py is configured to use email settings
+        #       fail_silently=False,
+        #    )
+        #   logger.info(f"Notification sent successfully to {self.user.email}")
+        #    return True
+        # except Exception as e:
+        #    logger.error(
+        #       f"Error sending status notification to {self.user.email: {str(e)}}"
+        #    )
+        #    return False
 
     def send_manager_notification(self):
         # Send a notification to the manager when leave request is submitted
@@ -413,26 +424,32 @@ class LeaveRequest(models.Model):
 
             Thank You!
         """
-        try:
-            logger.info(
-                f"Attempting to send manager notification to {self.user.manager.email}"
-            )
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[self.user.manager.email],
-                fail_silently=False,
-            )
-            logger.info(
-                f"Manager notification sent successfully to {self.user.manager.email}"
-            )
-            return True
-        except Exception as e:
-            logger.error(
-                f"Error sending manager notification to {self.user.manager.email}: {str(e)}"
-            )
-            return False
+        logger.info(f" MANAGER NOTIFICATION EMAIL (Demo Mode)")
+        logger.info(f"To: {self.user.manager.email}")
+        logger.info(f"Manager: {self.user.manager.get_full_name()}")
+        logger.info(f"Subject: {subject}")
+        return True
+
+        # try:
+        #    logger.info(
+        #        f"Attempting to send manager notification to {self.user.manager.email}"
+        #    )
+        #    send_mail(
+        #        subject=subject,
+        #        message=message,
+        #        from_email=settings.DEFAULT_FROM_EMAIL,
+        #        recipient_list=[self.user.manager.email],
+        #        fail_silently=False,
+        #    )
+        #    logger.info(
+        #        f"Manager notification sent successfully to {self.user.manager.email}"
+        #    )
+        #    return True
+        # except Exception as e:
+        #    logger.error(
+        #        f"Error sending manager notification to {self.user.manager.email}: {str(e)}"
+        #    )
+        #    return False
 
     def __str__(self):
         return f"{self.user} - {self.leave_type} ({self.start_date} to {self.end_date}) - {self.status}"
